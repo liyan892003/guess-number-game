@@ -22,10 +22,11 @@ let gameState = {
   currentGroup: 0,
   groups: [],
   players: new Map(),
-  studentIds: new Set(),
   guessHistory: [],
   winner: null
 };
+
+let usedStudentIds = new Set();
 
 const GROUP_SIZE = 5;
 
@@ -93,8 +94,8 @@ io.on('connection', (socket) => {
       return;
     }
     
-    if (gameState.studentIds.has(studentId.trim())) {
-      socket.emit('joinError', '该学号已被使用！');
+    if (usedStudentIds.has(studentId.trim())) {
+      socket.emit('joinError', '该学号已参加过游戏了！');
       return;
     }
     
@@ -107,7 +108,7 @@ io.on('connection', (socket) => {
       hasGuessed: false
     };
     
-    gameState.studentIds.add(studentId.trim());
+    usedStudentIds.add(studentId.trim());
     gameState.players.set(socket.id, player);
     assignGroups();
     
@@ -237,10 +238,6 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('用户断开连接:', socket.id);
-    const player = gameState.players.get(socket.id);
-    if (player && player.studentId) {
-      gameState.studentIds.delete(player.studentId);
-    }
     gameState.players.delete(socket.id);
     assignGroups();
     io.emit('playerListUpdated', getCurrentPlayers());
