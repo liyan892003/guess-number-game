@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猜数字游戏 - 课堂互动</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 猜数字游戏</h1>
+        
+        <div id="loginScreen" class="screen">
+            <div class="login-box">
+                <h2>欢迎参加猜数字游戏！</h2>
+                <p>请输入学号和姓名加入游戏</p>
+                <input type="text" id="studentId" placeholder="输入你的学号" maxlength="20">
+                <input type="text" id="playerName" placeholder="输入你的名字" maxlength="20">
+                <button id="joinBtn">加入游戏</button>
+            </div>
+        </div>
+        
+        <div id="gameScreen" class="screen hidden">
+            <div class="game-info">
+                <div class="info-card">
+                    <h3>当前范围</h3>
+                    <div class="range-display">
+                        <span id="minRange">1</span>
+                        <span class="separator">-</span>
+                        <span id="maxRange">100</span>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <h3>当前组</h3>
+                    <div class="group-display">
+                        <span id="currentGroup">第 1 组</span>
+                    </div>
+                    <div id="currentGroupPlayers" class="group-players"></div>
+                </div>
+            </div>
+            
+            <div class="guess-section">
+                <div class="guess-input-container">
+                    <input type="number" id="guessInput" placeholder="输入你猜的数字" min="1" max="100">
+                    <button id="guessBtn">猜！</button>
+                </div>
+                <div id="statusMessage" class="status-message"></div>
+            </div>
+            
+            <div class="history-section">
+                <h3>📜 猜题记录</h3>
+                <div id="guessHistory" class="history-list"></div>
+            </div>
+            
+            <div class="players-section">
+                <h3>👥 在线玩家</h3>
+                <div id="playerList" class="player-list"></div>
+            </div>
+            
+            <div class="control-section">
+                <button id="startBtn" class="control-btn">开始游戏</button>
+                <button id="resetBtn" class="control-btn hidden">重新开始</button>
+            </div>
+        </div>
+        
+        <div id="winScreen" class="screen hidden">
+            <div class="win-box">
+                <h2>🎉 恭喜！</h2>
+                <div id="winnerInfo"></div>
+                <p id="targetNumberReveal"></p>
+                <button id="playAgainBtn">再来一局</button>
+            </div>
+        </div>
+        
+        <div id="gameOverScreen" class="screen hidden">
+            <div class="win-box">
+                <h2>😅 游戏结束</h2>
+                <p>所有人都猜过了，没人猜中！</p>
+                <p id="gameOverTargetNumber"></p>
+                <button id="gameOverPlayAgainBtn">再来一局</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
