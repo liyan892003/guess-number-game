@@ -34,11 +34,11 @@
                     </div>
                 </div>
                 <div class="info-card">
-                    <h3>当前组</h3>
-                    <div class="group-display">
-                        <span id="currentGroup">第 1 组</span>
+                    <h3>第 <span id="roundNumber">1</span> 轮</h3>
+                    <div class="current-player-display">
+                        <span id="currentPlayerName">等待开始...</span>
                     </div>
-                    <div id="currentGroupPlayers" class="group-players"></div>
+                    <div id="currentPlayerHint" style="font-size: 0.9rem; color: #667eea; margin-top: 10px;"></div>
                 </div>
             </div>
             
@@ -51,12 +51,12 @@
             </div>
             
             <div class="history-section">
-                <h3>📜 猜题记录</h3>
+                <h3>📜 本轮猜题记录</h3>
                 <div id="guessHistory" class="history-list"></div>
             </div>
             
             <div class="players-section">
-                <h3>👥 在线玩家</h3>
+                <h3>👥 玩家顺序</h3>
                 <div id="playerList" class="player-list"></div>
             </div>
             
@@ -70,14 +70,7 @@
                 <h2>🎉 恭喜！</h2>
                 <div id="winnerInfo"></div>
                 <p id="targetNumberReveal"></p>
-            </div>
-        </div>
-        
-        <div id="gameOverScreen" class="screen hidden">
-            <div class="win-box">
-                <h2>😅 游戏结束</h2>
-                <p>所有人都猜过了，没人猜中！</p>
-                <p id="gameOverTargetNumber"></p>
+                <p style="color: #667eea; margin-top: 15px;">即将开始新的一轮...</p>
             </div>
         </div>
     </div>

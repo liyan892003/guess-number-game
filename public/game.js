@@ -1,44 +1,153 @@
 const socket = io();
-
 let playerId = null;
-let currentPlayers = [];
+let isMyTurn = false;
 
 const loginScreen = document.getElementById('loginScreen');
 const gameScreen = document.getElementById('gameScreen');
 const winScreen = document.getElementById('winScreen');
-const gameOverScreen = document.getElementById('gameOverScreen');
-const studentIdInput = document.getElementById('studentId');
-const playerNameInput = document.getElementById('playerName');
 const joinBtn = document.getElementById('joinBtn');
-const guessInput = document.getElementById('guessInput');
 const guessBtn = document.getElementById('guessBtn');
 const startBtn = document.getElementById('startBtn');
+const playerNameInput = document.getElementById('playerName');
+const studentIdInput = document.getElementById('studentId');
+const guessInput = document.getElementById('guessInput');
+const statusMessage = document.getElementById('statusMessage');
+const guessHistory = document.getElementById('guessHistory');
+const playerList = document.getElementById('playerList');
 const minRangeEl = document.getElementById('minRange');
 const maxRangeEl = document.getElementById('maxRange');
-const currentGroupEl = document.getElementById('currentGroup');
-const currentGroupPlayersEl = document.getElementById('currentGroupPlayers');
-const statusMessageEl = document.getElementById('statusMessage');
-const guessHistoryEl = document.getElementById('guessHistory');
-const playerListEl = document.getElementById('playerList');
-const winnerInfoEl = document.getElementById('winnerInfo');
-const targetNumberRevealEl = document.getElementById('targetNumberReveal');
-const gameOverTargetNumberEl = document.getElementById('gameOverTargetNumber');
+const currentPlayerNameEl = document.getElementById('currentPlayerName');
+const currentPlayerHintEl = document.getElementById('currentPlayerHint');
+const roundNumberEl = document.getElementById('roundNumber');
+const winnerInfo = document.getElementById('winnerInfo');
+const targetNumberReveal = document.getElementById('targetNumberReveal');
 
 function showScreen(screen) {
     loginScreen.classList.add('hidden');
     gameScreen.classList.add('hidden');
     winScreen.classList.add('hidden');
-    gameOverScreen.classList.add('hidden');
     screen.classList.remove('hidden');
+}
+
+function showMessage(message, type = 'info') {
+    statusMessage.textContent = message;
+    statusMessage.className = 'status-message';
+    statusMessage.classList.add(type);
+}
+
+function updatePlayerList(players) {
+    if (!players || players.length === 0) {
+        playerList.innerHTML = '<p style="color: #666; text-align: center;">暂无玩家</p>';
+        return;
+    }
+    
+    playerList.innerHTML = players.map((player, index) => {
+        let playerClass = '';
+        let statusText = '';
+        
+        if (player.hasGuessed) {
+            playerClass = 'guessed';
+            statusText = '已猜';
+        } else {
+            statusText = '等待';
+        }
+        
+        if (player.id === playerId) {
+            playerClass += ' is-me';
+        }
+        
+        return `
+            <div class="player-card ${playerClass}" data-player-id="${player.id}">
+                <div class="player-number">#${index + 1}</div>
+                <div class="player-info">
+                    <div class="player-name">${player.name}</div>
+                    <div class="player-student-id">${player.studentId}</div>
+                </div>
+                <div class="player-status">${statusText}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateCurrentPlayer(currentPlayer) {
+    if (!currentPlayer) {
+        currentPlayerNameEl.textContent = '等待开始...';
+        currentPlayerHintEl.textContent = '';
+        isMyTurn = false;
+        return;
+    }
+    
+    currentPlayerNameEl.textContent = currentPlayer.name;
+    
+    if (currentPlayer.id === playerId) {
+        currentPlayerHintEl.textContent = '👈 轮到你了！';
+        isMyTurn = true;
+    } else {
+        currentPlayerHintEl.textContent = '等待 ' + currentPlayer.name + ' 猜...';
+        isMyTurn = false;
+    }
+    
+    updateGuessButtonState();
+}
+
+function updateGuessButtonState() {
+    if (isMyTurn) {
+        guessBtn.disabled = false;
+        guessInput.disabled = false;
+        guessBtn.classList.remove('disabled');
+    } else {
+        guessBtn.disabled = true;
+        guessInput.disabled = true;
+        guessBtn.classList.add('disabled');
+    }
+}
+
+function updateGuessHistory(history) {
+    if (!history || history.length === 0) {
+        guessHistory.innerHTML = '<p style="color: #666; text-align: center;">暂无猜题记录</p>';
+        return;
+    }
+    
+    guessHistory.innerHTML = history.map(guess => {
+        let emoji = '';
+        let resultClass = '';
+        
+        if (guess.result === 'correct') {
+            emoji = '🎉';
+            resultClass = 'correct';
+        } else if (guess.result === 'tooSmall') {
+            emoji = '📉';
+            resultClass = 'too-small';
+        } else if (guess.result === 'tooBig') {
+            emoji = '📈';
+            resultClass = 'too-big';
+        }
+        
+        return `
+            <div class="history-item ${resultClass}">
+                <span class="history-player">${guess.playerName}</span>
+                <span class="history-number">${guess.guess}</span>
+                <span class="history-result">${emoji}</span>
+            </div>
+        `;
+    }).join('');
 }
 
 joinBtn.addEventListener('click', () => {
     const studentId = studentIdInput.value.trim();
-    const name = playerNameInput.value.trim();
-    if (studentId && name) {
-        socket.emit('join', { studentId, playerName: name });
-    } else {
-        alert('请输入学号和姓名！');
+    const playerName = playerNameInput.value.trim();
+    
+    if (!studentId) {
+        alert('请输入学号！');
+        return;
+    }
+    
+    socket.emit('join', { studentId, playerName });
+});
+
+studentIdInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        joinBtn.click();
     }
 });
 
@@ -48,14 +157,8 @@ playerNameInput.addEventListener('keypress', (e) => {
     }
 });
 
-studentIdInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        playerNameInput.focus();
-    }
-});
-
 guessBtn.addEventListener('click', () => {
-    const guess = guessInput.value;
+    const guess = guessInput.value.trim();
     if (guess) {
         socket.emit('makeGuess', guess);
         guessInput.value = '';
@@ -72,133 +175,82 @@ startBtn.addEventListener('click', () => {
     socket.emit('startGame');
 });
 
+socket.on('joinError', (message) => {
+    alert(message);
+});
+
 socket.on('joined', (data) => {
     playerId = data.playerId;
-    currentPlayers = data.players;
-    updatePlayerList();
+    showScreen(gameScreen);
+    updatePlayerList(data.players);
     
-    if (data.gameState.isGameActive) {
+    if (data.gameState) {
         minRangeEl.textContent = data.gameState.minRange;
         maxRangeEl.textContent = data.gameState.maxRange;
-        currentGroupEl.textContent = `第 ${data.gameState.currentGroup + 1} 组`;
-        updateGuessHistory(data.gameState.guessHistory);
+        roundNumberEl.textContent = data.gameState.roundNumber;
+        updateCurrentPlayer(data.gameState.currentPlayer);
     }
-    
-    showScreen(gameScreen);
 });
 
 socket.on('playerListUpdated', (players) => {
-    currentPlayers = players;
-    updatePlayerList();
+    updatePlayerList(players);
+});
+
+socket.on('currentPlayerUpdated', (data) => {
+    updateCurrentPlayer(data.currentPlayer);
 });
 
 socket.on('gameStarted', (data) => {
+    startBtn.classList.add('hidden');
+    guessHistory.innerHTML = '';
     minRangeEl.textContent = data.minRange;
     maxRangeEl.textContent = data.maxRange;
-    currentGroupEl.textContent = `第 ${data.currentGroup + 1} 组`;
-    updateCurrentGroupPlayers(data.currentGroupPlayers);
-    guessHistoryEl.innerHTML = '';
-    statusMessageEl.textContent = '';
-    statusMessageEl.className = 'status-message';
-    startBtn.classList.add('hidden');
+    roundNumberEl.textContent = data.roundNumber;
+    updateCurrentPlayer(data.currentPlayer);
+    updatePlayerList(data.players);
+    showMessage('游戏开始！');
+});
+
+socket.on('newRoundStarted', (data) => {
     showScreen(gameScreen);
+    guessHistory.innerHTML = '';
+    minRangeEl.textContent = data.minRange;
+    maxRangeEl.textContent = data.maxRange;
+    roundNumberEl.textContent = data.roundNumber;
+    updateCurrentPlayer(data.currentPlayer);
+    updatePlayerList(data.players);
+    showMessage('新的一轮开始！');
 });
 
 socket.on('guessMade', (data) => {
     minRangeEl.textContent = data.minRange;
     maxRangeEl.textContent = data.maxRange;
-    currentGroupEl.textContent = `第 ${data.currentGroup + 1} 组`;
-    updateCurrentGroupPlayers(data.currentGroupPlayers);
-    updateGuessHistory(data.guessHistory);
+    updateGuessHistory([data.guess]);
+    updateCurrentPlayer(data.currentPlayer);
     
-    if (data.guess.playerId === playerId) {
-        statusMessageEl.textContent = data.result === 'tooSmall' ? '太小了！' : '太大了！';
-        statusMessageEl.className = `status-message ${data.result === 'tooSmall' ? 'too-small' : 'too-big'}`;
-    } else {
-        statusMessageEl.textContent = `${data.guess.playerName} 猜了 ${data.guess.guess}，${data.result === 'tooSmall' ? '太小了！' : '太大了！'}`;
-        statusMessageEl.className = `status-message ${data.result === 'tooSmall' ? 'too-small' : 'too-big'}`;
+    if (data.result === 'tooSmall') {
+        showMessage('太小了！', 'too-small');
+    } else if (data.result === 'tooBig') {
+        showMessage('太大了！', 'too-big');
     }
 });
 
-socket.on('gameWon', (data) => {
-    winnerInfoEl.textContent = `${data.winner.name} 猜中了！`;
-    targetNumberRevealEl.textContent = `正确答案是：${data.targetNumber}`;
-    updateGuessHistory(data.guessHistory);
+socket.on('roundWon', (data) => {
     showScreen(winScreen);
-    startBtn.classList.remove('hidden');
-});
-
-socket.on('gameOverNoWinner', (data) => {
-    gameOverTargetNumberEl.textContent = `正确答案是：${data.targetNumber}`;
-    updateGuessHistory(data.guessHistory);
-    showScreen(gameOverScreen);
-    startBtn.classList.remove('hidden');
-});
-
-socket.on('notYourTurn', () => {
-    statusMessageEl.textContent = '还没轮到你们组哦！';
-    statusMessageEl.className = 'status-message';
-});
-
-socket.on('invalidGuess', () => {
-    statusMessageEl.textContent = '请输入有效范围内的数字！';
-    statusMessageEl.className = 'status-message';
-});
-
-socket.on('joinError', (message) => {
-    alert(message);
+    winnerInfo.innerHTML = `<p class="winner-name">${data.winner.name}</p><p style="color: #667eea;">(${data.winner.studentId})</p>`;
+    targetNumberReveal.textContent = `正确答案是：${data.targetNumber}`;
+    
+    updateGuessHistory([data.guessRecord]);
 });
 
 socket.on('alreadyGuessed', () => {
-    statusMessageEl.textContent = '你已经猜过一次了！';
-    statusMessageEl.className = 'status-message';
+    showMessage('你已经猜过了！', 'error');
 });
 
-function updatePlayerList() {
-    playerListEl.innerHTML = currentPlayers.map(player => {
-        const playerGroup = player.group !== undefined ? player.group : -1;
-        const hasGuessed = player.hasGuessed;
-        return `
-            <div class="player-item ${hasGuessed ? 'has-guessed' : ''}">
-                <div class="name">${player.name}</div>
-                <div class="student-id">${player.studentId}</div>
-                <div class="group-tag">${playerGroup >= 0 ? `第 ${playerGroup + 1} 组` : '等待分组'}</div>
-                ${hasGuessed ? '<div class="guess-status">已猜</div>' : ''}
-            </div>
-        `;
-    }).join('');
-}
+socket.on('notYourTurn', () => {
+    showMessage('还没轮到你！', 'error');
+});
 
-function updateCurrentGroupPlayers(players) {
-    if (players && players.length > 0) {
-        currentGroupPlayersEl.textContent = players.map(p => p.name).join('、');
-    } else {
-        currentGroupPlayersEl.textContent = '等待玩家加入...';
-    }
-}
-
-function updateGuessHistory(history) {
-    guessHistoryEl.innerHTML = history.slice().reverse().map((item) => {
-        let resultClass = '';
-        let resultText = '';
-        
-        if (item.result === 'tooSmall') {
-            resultClass = 'too-small';
-            resultText = '太小了';
-        } else if (item.result === 'tooBig') {
-            resultClass = 'too-big';
-            resultText = '太大了';
-        } else if (item.result === 'correct') {
-            resultClass = 'correct';
-            resultText = '猜对了！';
-        }
-        
-        return `
-            <div class="history-item">
-                <span class="player-name">${item.playerName}</span>
-                <span class="guess">${item.guess}</span>
-                <span class="result ${resultClass}">${resultText}</span>
-            </div>
-        `;
-    }).join('');
-}
+socket.on('invalidGuess', () => {
+    showMessage('请输入范围内的数字！', 'error');
+});

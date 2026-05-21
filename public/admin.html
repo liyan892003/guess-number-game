@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <style>
         .admin-container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 50px auto;
             padding: 30px;
             background: white;
@@ -43,9 +43,18 @@
             font-size: 1rem;
             opacity: 0.9;
         }
+        .section-title {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
         .student-list {
-            max-height: 400px;
+            max-height: 300px;
             overflow-y: auto;
+            margin-bottom: 30px;
         }
         .student-item {
             display: flex;
@@ -58,6 +67,81 @@
             border-bottom: none;
         }
         .student-item .id {
+            font-weight: bold;
+            color: #667eea;
+        }
+        .game-history {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .round-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .round-card .round-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .round-card .round-date {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .round-card .round-target {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .round-card .round-winner {
+            background: #e8f5e9;
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .round-card .round-winner .winner-label {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        .round-card .round-guesses {
+            margin-top: 15px;
+        }
+        .round-card .round-guesses h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .guess-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+        }
+        .guess-item {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .guess-item.correct {
+            background: #e8f5e9;
+            border: 2px solid #2ecc71;
+        }
+        .guess-item.too-small {
+            background: #fff3e0;
+        }
+        .guess-item.too-big {
+            background: #ffebee;
+        }
+        .guess-item .name {
+            font-weight: 600;
+            color: #333;
+        }
+        .guess-item .number {
             font-weight: bold;
             color: #667eea;
         }
@@ -81,18 +165,27 @@
     <div class="admin-container">
         <div class="admin-header">
             <h1>📊 游戏管理后台</h1>
-            <p>查看参加游戏的学生记录</p>
+            <p>查看参加游戏的学生记录和每轮详情</p>
         </div>
         
         <div class="stats">
             <div class="stat-card">
                 <div class="number" id="totalStudents">0</div>
-                <div class="label">参加人次</div>
+                <div class="label">总参加人次</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalRounds">0</div>
+                <div class="label">游戏轮数</div>
             </div>
         </div>
         
-        <h3 style="margin-bottom: 15px;">📋 学生名单</h3>
+        <h3 class="section-title">📋 所有学生</h3>
         <div class="student-list" id="studentList">
+            <p style="color: #666; text-align: center;">加载中...</p>
+        </div>
+        
+        <h3 class="section-title">🎮 每轮游戏记录</h3>
+        <div class="game-history" id="gameHistory">
             <p style="color: #666; text-align: center;">加载中...</p>
         </div>
         
@@ -108,6 +201,7 @@
                 const data = await response.json();
                 
                 document.getElementById('totalStudents').textContent = data.totalParticipants;
+                document.getElementById('totalRounds').textContent = data.gameHistory.length;
                 
                 const studentList = document.getElementById('studentList');
                 if (data.usedStudentIds.length === 0) {
@@ -120,9 +214,60 @@
                         </div>
                     `).join('');
                 }
+                
+                const gameHistory = document.getElementById('gameHistory');
+                if (data.gameHistory.length === 0) {
+                    gameHistory.innerHTML = '<p style="color: #666; text-align: center;">还没有游戏记录</p>';
+                } else {
+                    gameHistory.innerHTML = data.gameHistory.slice().reverse().map(round => {
+                        const date = new Date(round.date);
+                        const dateStr = date.toLocaleString('zh-CN');
+                        
+                        const guessesHtml = round.guesses ? round.guesses.map(guess => {
+                            let guessClass = '';
+                            if (guess.result === 'correct') {
+                                guessClass = 'correct';
+                            } else if (guess.result === 'tooSmall') {
+                                guessClass = 'too-small';
+                            } else if (guess.result === 'tooBig') {
+                                guessClass = 'too-big';
+                            }
+                            
+                            return `
+                                <div class="guess-item ${guessClass}">
+                                    <span class="name">${guess.playerName}</span>
+                                    <span class="number">${guess.guess}</span>
+                                </div>
+                            `;
+                        }).join('') : '';
+                        
+                        return `
+                            <div class="round-card">
+                                <div class="round-header">
+                                    <span class="round-date">${dateStr}</span>
+                                    <span class="round-target">第 ${round.roundNumber} 轮 | 🎯 目标数字: ${round.targetNumber}</span>
+                                </div>
+                                ${round.winner ? `
+                                    <div class="round-winner">
+                                        <span class="winner-label">🎉 胜利者: ${round.winner.name} (${round.winner.studentId})</span>
+                                    </div>
+                                ` : ''}
+                                ${round.guesses && round.guesses.length > 0 ? `
+                                    <div class="round-guesses">
+                                        <h4>猜题记录:</h4>
+                                        <div class="guess-list">
+                                            ${guessesHtml}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                }
             } catch (error) {
                 console.error('加载记录失败:', error);
                 document.getElementById('studentList').innerHTML = '<p style="color: red; text-align: center;">加载失败，请刷新页面</p>';
+                document.getElementById('gameHistory').innerHTML = '<p style="color: red; text-align: center;">加载失败，请刷新页面</p>';
             }
         }
         

@@ -5,14 +5,14 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     padding: 20px;
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 800px;
     margin: 0 auto;
 }
 
@@ -25,34 +25,29 @@ h1 {
 }
 
 .screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: block;
 }
 
-.hidden {
-    display: none !important;
+.screen.hidden {
+    display: none;
 }
 
 .login-box, .win-box {
     background: white;
-    border-radius: 20px;
     padding: 40px;
+    border-radius: 20px;
     text-align: center;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    width: 100%;
-    max-width: 400px;
 }
 
 .login-box h2, .win-box h2 {
     color: #333;
-    margin-bottom: 10px;
-    font-size: 1.8rem;
+    margin-bottom: 15px;
 }
 
 .login-box p {
     color: #666;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 input {
@@ -62,11 +57,11 @@ input {
     border: 2px solid #e0e0e0;
     border-radius: 10px;
     margin-bottom: 15px;
-    outline: none;
     transition: border-color 0.3s;
 }
 
 input:focus {
+    outline: none;
     border-color: #667eea;
 }
 
@@ -74,12 +69,12 @@ button {
     width: 100%;
     padding: 15px;
     font-size: 1.1rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-weight: bold;
     color: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    font-weight: 600;
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -88,65 +83,54 @@ button:hover {
     box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
 }
 
-button:active {
-    transform: translateY(0);
+button:disabled, button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .game-info {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
-    width: 100%;
     margin-bottom: 30px;
 }
 
 .info-card {
     background: white;
-    border-radius: 15px;
     padding: 25px;
+    border-radius: 15px;
+    text-align: center;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
 .info-card h3 {
     color: #666;
-    font-size: 1rem;
-    margin-bottom: 15px;
-    text-align: center;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    text-transform: uppercase;
 }
 
 .range-display {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     font-size: 2.5rem;
     font-weight: bold;
-    color: #333;
+    color: #667eea;
 }
 
 .range-display .separator {
-    margin: 0 15px;
-    color: #999;
+    margin: 0 10px;
 }
 
-.group-display {
-    text-align: center;
+.current-player-display {
     font-size: 1.8rem;
     font-weight: bold;
     color: #667eea;
 }
 
-.group-players {
-    margin-top: 10px;
-    text-align: center;
-    color: #666;
-    font-size: 0.9rem;
-}
-
 .guess-section {
     background: white;
-    border-radius: 15px;
     padding: 30px;
-    width: 100%;
+    border-radius: 15px;
     margin-bottom: 20px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
@@ -154,7 +138,6 @@ button:active {
 .guess-input-container {
     display: flex;
     gap: 15px;
-    margin-bottom: 15px;
 }
 
 .guess-input-container input {
@@ -164,33 +147,46 @@ button:active {
 
 .guess-input-container button {
     width: auto;
-    padding: 15px 40px;
+    padding: 15px 30px;
 }
 
 .status-message {
+    margin-top: 15px;
+    padding: 15px;
+    border-radius: 10px;
     text-align: center;
-    font-size: 1.1rem;
-    min-height: 30px;
+    font-weight: 600;
+}
+
+.status-message.info {
+    background: #e3f2fd;
+    color: #1976d2;
 }
 
 .status-message.too-small {
-    color: #ff6b6b;
+    background: #fff3e0;
+    color: #f57c00;
 }
 
 .status-message.too-big {
-    color: #4ecdc4;
+    background: #ffebee;
+    color: #d32f2f;
 }
 
 .status-message.correct {
-    color: #2ecc71;
-    font-weight: bold;
+    background: #e8f5e9;
+    color: #388e3c;
+}
+
+.status-message.error {
+    background: #ffebee;
+    color: #d32f2f;
 }
 
 .history-section, .players-section {
     background: white;
-    border-radius: 15px;
     padding: 25px;
-    width: 100%;
+    border-radius: 15px;
     margin-bottom: 20px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
@@ -200,48 +196,49 @@ button:active {
     margin-bottom: 15px;
 }
 
-.history-list, .player-list {
+.history-list {
     max-height: 200px;
     overflow-y: auto;
 }
 
 .history-item {
-    padding: 10px;
-    border-bottom: 1px solid #eee;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 12px 15px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin-bottom: 8px;
 }
 
-.history-item:last-child {
-    border-bottom: none;
+.history-item.too-small {
+    background: #fff3e0;
+    border-left: 4px solid #f57c00;
 }
 
-.history-item .player-name {
+.history-item.too-big {
+    background: #ffebee;
+    border-left: 4px solid #d32f2f;
+}
+
+.history-item.correct {
+    background: #e8f5e9;
+    border-left: 4px solid #388e3c;
+}
+
+.history-player {
     font-weight: 600;
     color: #333;
 }
 
-.history-item .guess {
-    font-size: 1.2rem;
+.history-number {
+    font-size: 1.3rem;
     font-weight: bold;
     color: #667eea;
 }
 
-.history-item .result {
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 0.9rem;
-}
-
-.history-item .result.too-small {
-    background: #ffe5e5;
-    color: #ff6b6b;
-}
-
-.history-item .result.too-big {
-    background: #e5f8f6;
-    color: #4ecdc4;
+.history-result {
+    font-size: 1.5rem;
 }
 
 .player-list {
@@ -250,84 +247,81 @@ button:active {
     gap: 10px;
 }
 
-.player-item {
-    background: #f8f9fa;
-    padding: 10px 15px;
-    border-radius: 8px;
+.player-card {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 10px;
     text-align: center;
+    border: 2px solid transparent;
+    transition: all 0.3s;
 }
 
-.player-item.current-group {
+.player-card.is-me {
+    border-color: #667eea;
     background: #e8eaf6;
-    border: 2px solid #667eea;
 }
 
-.player-item .name {
+.player-card.guessed {
+    opacity: 0.6;
+}
+
+.player-number {
+    font-size: 0.8rem;
+    color: #999;
+    margin-bottom: 5px;
+}
+
+.player-info .player-name {
     font-weight: 600;
     color: #333;
+    font-size: 0.95rem;
 }
 
-.player-item .student-id {
-    font-size: 0.85rem;
+.player-info .player-student-id {
+    font-size: 0.8rem;
     color: #666;
     margin-top: 3px;
 }
 
-.player-item .group-tag {
-    font-size: 0.8rem;
-    color: #667eea;
-    margin-top: 5px;
-}
-
-.player-item .guess-status {
+.player-status {
     font-size: 0.75rem;
-    color: #2ecc71;
-    margin-top: 5px;
-    font-weight: 600;
-}
-
-.player-item.has-guessed {
-    opacity: 0.7;
-    background: #f0f0f0;
+    color: #999;
+    margin-top: 8px;
 }
 
 .control-section {
-    display: flex;
-    gap: 15px;
-    width: 100%;
+    text-align: center;
 }
 
 .control-btn {
-    background: white;
-    color: #667eea;
-    border: 2px solid #667eea;
+    max-width: 300px;
 }
 
-.control-btn:hover {
-    background: #667eea;
-    color: white;
-}
-
-.win-box {
-    animation: bounceIn 0.5s;
-}
-
-@keyframes bounceIn {
-    0% { transform: scale(0.3); opacity: 0; }
-    50% { transform: scale(1.05); }
-    70% { transform: scale(0.9); }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-#winnerInfo {
-    font-size: 1.5rem;
-    color: #667eea;
+.winner-name {
+    font-size: 2rem;
     font-weight: bold;
+    color: #667eea;
     margin: 20px 0;
 }
 
-#targetNumberReveal {
-    font-size: 1.2rem;
-    color: #666;
-    margin-bottom: 20px;
+@media (max-width: 600px) {
+    h1 {
+        font-size: 1.8rem;
+    }
+    
+    .game-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .guess-input-container {
+        flex-direction: column;
+    }
+    
+    .guess-input-container button {
+        width: 100%;
+    }
+    
+    .player-list {
+        grid-template-columns: 1fr;
+    }
 }
