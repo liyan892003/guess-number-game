@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -14,6 +15,30 @@ const io = socketIo(server, {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+const USED_STUDENTS_FILE = path.join(__dirname, 'used-students.json');
+
+function loadUsedStudents() {
+  try {
+    if (fs.existsSync(USED_STUDENTS_FILE)) {
+      const data = fs.readFileSync(USED_STUDENTS_FILE, 'utf8');
+      return new Set(JSON.parse(data));
+    }
+  } catch (e) {
+    console.log('加载已用学号失败:', e);
+  }
+  return new Set();
+}
+
+function saveUsedStudents(studentIds) {
+  try {
+    fs.writeFileSync(USED_STUDENTS_FILE, JSON.stringify(Array.from(studentIds)));
+  } catch (e) {
+    console.log('保存已用学号失败:', e);
+  }
+}
+
+let usedStudentIds = loadUsedStudents();
+
 let gameState = {
   targetNumber: null,
   minRange: 1,
@@ -22,11 +47,10 @@ let gameState = {
   currentGroup: 0,
   groups: [],
   players: new Map(),
+  studentIds: new Set(),
   guessHistory: [],
   winner: null
 };
-
-let usedStudentIds = new Set();
 
 const GROUP_SIZE = 5;
 
@@ -109,6 +133,8 @@ io.on('connection', (socket) => {
     };
     
     usedStudentIds.add(studentId.trim());
+    saveUsedStudents(usedStudentIds);
+    gameState.studentIds.add(studentId.trim());
     gameState.players.set(socket.id, player);
     assignGroups();
     
@@ -226,18 +252,12 @@ io.on('connection', (socket) => {
     io.emit('playerListUpdated', getCurrentPlayers());
   });
 
-  socket.on('resetGame', () => {
-    resetGame();
-    io.emit('gameStarted', {
-      minRange: gameState.minRange,
-      maxRange: gameState.maxRange,
-      currentGroup: gameState.currentGroup,
-      currentGroupPlayers: getCurrentGroupPlayers()
-    });
-  });
-
   socket.on('disconnect', () => {
     console.log('用户断开连接:', socket.id);
+    const player = gameState.players.get(socket.id);
+    if (player && player.studentId) {
+      gameState.studentIds.delete(player.studentId);
+    }
     gameState.players.delete(socket.id);
     assignGroups();
     io.emit('playerListUpdated', getCurrentPlayers());

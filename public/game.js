@@ -13,9 +13,6 @@ const joinBtn = document.getElementById('joinBtn');
 const guessInput = document.getElementById('guessInput');
 const guessBtn = document.getElementById('guessBtn');
 const startBtn = document.getElementById('startBtn');
-const resetBtn = document.getElementById('resetBtn');
-const playAgainBtn = document.getElementById('playAgainBtn');
-const gameOverPlayAgainBtn = document.getElementById('gameOverPlayAgainBtn');
 const minRangeEl = document.getElementById('minRange');
 const maxRangeEl = document.getElementById('maxRange');
 const currentGroupEl = document.getElementById('currentGroup');
@@ -75,20 +72,6 @@ startBtn.addEventListener('click', () => {
     socket.emit('startGame');
 });
 
-resetBtn.addEventListener('click', () => {
-    socket.emit('resetGame');
-});
-
-playAgainBtn.addEventListener('click', () => {
-    socket.emit('resetGame');
-    showScreen(gameScreen);
-});
-
-gameOverPlayAgainBtn.addEventListener('click', () => {
-    socket.emit('resetGame');
-    showScreen(gameScreen);
-});
-
 socket.on('joined', (data) => {
     playerId = data.playerId;
     currentPlayers = data.players;
@@ -118,7 +101,6 @@ socket.on('gameStarted', (data) => {
     statusMessageEl.textContent = '';
     statusMessageEl.className = 'status-message';
     startBtn.classList.add('hidden');
-    resetBtn.classList.remove('hidden');
     showScreen(gameScreen);
 });
 
@@ -144,7 +126,6 @@ socket.on('gameWon', (data) => {
     updateGuessHistory(data.guessHistory);
     showScreen(winScreen);
     startBtn.classList.remove('hidden');
-    resetBtn.classList.add('hidden');
 });
 
 socket.on('gameOverNoWinner', (data) => {
@@ -152,7 +133,6 @@ socket.on('gameOverNoWinner', (data) => {
     updateGuessHistory(data.guessHistory);
     showScreen(gameOverScreen);
     startBtn.classList.remove('hidden');
-    resetBtn.classList.add('hidden');
 });
 
 socket.on('notYourTurn', () => {
