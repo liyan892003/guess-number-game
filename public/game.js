@@ -251,3 +251,7 @@ socket.on('notYourTurn', () => {
 socket.on('invalidGuess', () => {
     showMessage('请输入范围内的数字！', 'error');
 });
+
+socket.on('resetGame', () => {
+    location.reload();
+});

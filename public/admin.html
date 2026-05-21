@@ -179,6 +179,12 @@
             </div>
         </div>
         
+        <div style="text-align: center; margin-bottom: 30px;">
+            <button id="resetBtn" style="max-width: 300px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                🔄 重置所有记录
+            </button>
+        </div>
+        
         <h3 class="section-title">📋 所有学生</h3>
         <div class="student-list" id="studentList">
             <p style="color: #666; text-align: center;">加载中...</p>
@@ -272,6 +278,24 @@
         }
         
         loadRecords();
+        
+        document.getElementById('resetBtn').addEventListener('click', async () => {
+            if (confirm('确定要重置所有记录吗？这将清空所有学生记录和游戏历史！')) {
+                try {
+                    const response = await fetch('/admin/reset', { method: 'POST' });
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('重置成功！');
+                        loadRecords();
+                    } else {
+                        alert('重置失败：' + (result.error || '未知错误'));
+                    }
+                } catch (e) {
+                    console.error('重置失败:', e);
+                    alert('重置失败，请稍后重试');
+                }
+            }
+        });
     </script>
 </body>
 </html>

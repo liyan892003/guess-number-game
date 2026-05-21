@@ -24,6 +24,36 @@ app.get('/admin/records', (req, res) => {
   res.json(records);
 });
 
+app.post('/admin/reset', (req, res) => {
+  try {
+    usedStudentIds = new Set();
+    saveUsedStudents(usedStudentIds);
+    
+    gameHistory = [];
+    saveGameHistory(gameHistory);
+    
+    gameState = {
+      targetNumber: null,
+      minRange: 1,
+      maxRange: 100,
+      currentPlayerIndex: 0,
+      players: new Map(),
+      studentIds: new Set(),
+      roundNumber: 0
+    };
+    
+    currentRoundPlayers = [];
+    currentRoundRecords = [];
+    
+    io.emit('resetGame');
+    
+    res.json({ success: true });
+  } catch (e) {
+    console.error('重置失败:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 const USED_STUDENTS_FILE = path.join(__dirname, 'used-students.json');
 const GAME_HISTORY_FILE = path.join(__dirname, 'game-history.json');
 
