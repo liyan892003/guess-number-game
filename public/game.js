@@ -1,13 +1,13 @@
 const socket = io();
 let playerId = null;
 let isMyTurn = false;
+let allGuesses = [];
 
 const loginScreen = document.getElementById('loginScreen');
 const gameScreen = document.getElementById('gameScreen');
 const winScreen = document.getElementById('winScreen');
 const joinBtn = document.getElementById('joinBtn');
 const guessBtn = document.getElementById('guessBtn');
-const startBtn = document.getElementById('startBtn');
 const playerNameInput = document.getElementById('playerName');
 const studentIdInput = document.getElementById('studentId');
 const guessInput = document.getElementById('guessInput');
@@ -102,13 +102,13 @@ function updateGuessButtonState() {
     }
 }
 
-function updateGuessHistory(history) {
-    if (!history || history.length === 0) {
+function updateAllGuessHistory() {
+    if (!allGuesses || allGuesses.length === 0) {
         guessHistory.innerHTML = '<p style="color: #666; text-align: center;">暂无猜题记录</p>';
         return;
     }
     
-    guessHistory.innerHTML = history.map(guess => {
+    guessHistory.innerHTML = allGuesses.map(guess => {
         let emoji = '';
         let resultClass = '';
         
@@ -171,10 +171,6 @@ guessInput.addEventListener('keypress', (e) => {
     }
 });
 
-startBtn.addEventListener('click', () => {
-    socket.emit('startGame');
-});
-
 socket.on('joinError', (message) => {
     alert(message);
 });
@@ -184,11 +180,16 @@ socket.on('joined', (data) => {
     showScreen(gameScreen);
     updatePlayerList(data.players);
     
-    if (data.gameState) {
-        minRangeEl.textContent = data.gameState.minRange;
-        maxRangeEl.textContent = data.gameState.maxRange;
-        roundNumberEl.textContent = data.gameState.roundNumber;
-        updateCurrentPlayer(data.gameState.currentPlayer);
+    if (data.allGuesses) {
+        allGuesses = data.allGuesses;
+        updateAllGuessHistory();
+    }
+    
+    if (data.roundData) {
+        minRangeEl.textContent = data.roundData.minRange;
+        maxRangeEl.textContent = data.roundData.maxRange;
+        roundNumberEl.textContent = data.roundData.roundNumber;
+        updateCurrentPlayer(data.roundData.currentPlayer);
     }
 });
 
@@ -200,20 +201,8 @@ socket.on('currentPlayerUpdated', (data) => {
     updateCurrentPlayer(data.currentPlayer);
 });
 
-socket.on('gameStarted', (data) => {
-    startBtn.classList.add('hidden');
-    guessHistory.innerHTML = '';
-    minRangeEl.textContent = data.minRange;
-    maxRangeEl.textContent = data.maxRange;
-    roundNumberEl.textContent = data.roundNumber;
-    updateCurrentPlayer(data.currentPlayer);
-    updatePlayerList(data.players);
-    showMessage('游戏开始！');
-});
-
 socket.on('newRoundStarted', (data) => {
     showScreen(gameScreen);
-    guessHistory.innerHTML = '';
     minRangeEl.textContent = data.minRange;
     maxRangeEl.textContent = data.maxRange;
     roundNumberEl.textContent = data.roundNumber;
@@ -225,7 +214,12 @@ socket.on('newRoundStarted', (data) => {
 socket.on('guessMade', (data) => {
     minRangeEl.textContent = data.minRange;
     maxRangeEl.textContent = data.maxRange;
-    updateGuessHistory([data.guess]);
+    
+    if (data.guess) {
+        allGuesses.push(data.guess);
+        updateAllGuessHistory();
+    }
+    
     updateCurrentPlayer(data.currentPlayer);
     
     if (data.result === 'tooSmall') {
@@ -240,7 +234,10 @@ socket.on('roundWon', (data) => {
     winnerInfo.innerHTML = `<p class="winner-name">${data.winner.name}</p><p style="color: #667eea;">(${data.winner.studentId})</p>`;
     targetNumberReveal.textContent = `正确答案是：${data.targetNumber}`;
     
-    updateGuessHistory([data.guessRecord]);
+    if (data.guessRecord) {
+        allGuesses.push(data.guessRecord);
+        updateAllGuessHistory();
+    }
 });
 
 socket.on('alreadyGuessed', () => {

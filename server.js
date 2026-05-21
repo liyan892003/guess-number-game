@@ -69,14 +69,13 @@ function saveGameHistory(history) {
 
 let usedStudentIds = loadUsedStudents();
 let gameHistory = loadGameHistory();
-let currentRoundPlayers = []; // 当前轮的玩家顺序
-let currentRoundRecords = []; // 当前轮的记录
+let currentRoundPlayers = [];
+let currentRoundRecords = [];
 
 let gameState = {
   targetNumber: null,
   minRange: 1,
   maxRange: 100,
-  isGameActive: false,
   currentPlayerIndex: 0,
   players: new Map(),
   studentIds: new Set(),
@@ -87,11 +86,10 @@ function generateTargetNumber() {
   return Math.floor(Math.random() * 100) + 1;
 }
 
-function resetGame() {
+function startNewRound() {
   gameState.targetNumber = generateTargetNumber();
   gameState.minRange = 1;
   gameState.maxRange = 100;
-  gameState.isGameActive = true;
   gameState.currentPlayerIndex = 0;
   gameState.roundNumber += 1;
   
@@ -102,6 +100,23 @@ function resetGame() {
     player.index = index;
     player.hasGuessed = false;
   });
+  
+  return {
+    targetNumber: gameState.targetNumber,
+    minRange: gameState.minRange,
+    maxRange: gameState.maxRange,
+    currentPlayerIndex: gameState.currentPlayerIndex,
+    currentPlayer: getCurrentPlayer(),
+    roundNumber: gameState.roundNumber,
+    players: getCurrentPlayers()
+  };
+}
+
+function hasUnguessedPlayers() {
+  for (let p of currentRoundPlayers) {
+    if (!p.hasGuessed) return true;
+  }
+  return false;
 }
 
 function getCurrentPlayers() {
@@ -124,7 +139,7 @@ function saveRoundRecord(winner) {
   const roundRecord = {
     id: Date.now(),
     date: new Date().toISOString(),
-    roundNumber: gameState.roundNumber - 1,
+    roundNumber: gameState.roundNumber,
     targetNumber: gameState.targetNumber,
     winner: winner ? {
       studentId: winner.studentId,
@@ -166,43 +181,36 @@ io.on('connection', (socket) => {
     gameState.players.set(socket.id, player);
     currentRoundPlayers.push(player);
     
-    socket.emit('joined', {
-      playerId: socket.id,
-      players: getCurrentPlayers(),
-      gameState: {
-        isGameActive: gameState.isGameActive,
-        minRange: gameState.minRange,
-        maxRange: gameState.maxRange,
-        currentPlayerIndex: gameState.currentPlayerIndex,
-        currentPlayer: getCurrentPlayer(),
-        roundNumber: gameState.roundNumber
-      }
-    });
-    
-    io.emit('playerListUpdated', getCurrentPlayers());
-    io.emit('currentPlayerUpdated', {
-      currentPlayerIndex: gameState.currentPlayerIndex,
-      currentPlayer: getCurrentPlayer()
-    });
-  });
-
-  socket.on('startGame', () => {
-    if (gameState.players.size > 0) {
-      gameState.isGameActive = false;
-      resetGame();
-      io.emit('gameStarted', {
-        minRange: gameState.minRange,
-        maxRange: gameState.maxRange,
-        currentPlayerIndex: gameState.currentPlayerIndex,
-        currentPlayer: getCurrentPlayer(),
-        roundNumber: gameState.roundNumber,
-        players: getCurrentPlayers()
+    if (gameState.roundNumber === 0) {
+      const roundData = startNewRound();
+      socket.emit('joined', {
+        playerId: socket.id,
+        players: getCurrentPlayers(),
+        roundData: roundData,
+        allGuesses: getAllGuesses()
+      });
+      io.emit('newRoundStarted', roundData);
+    } else {
+      socket.emit('joined', {
+        playerId: socket.id,
+        players: getCurrentPlayers(),
+        roundData: {
+          minRange: gameState.minRange,
+          maxRange: gameState.maxRange,
+          currentPlayerIndex: gameState.currentPlayerIndex,
+          currentPlayer: getCurrentPlayer(),
+          roundNumber: gameState.roundNumber,
+          players: getCurrentPlayers()
+        },
+        allGuesses: getAllGuesses()
       });
     }
+    
+    io.emit('playerListUpdated', getCurrentPlayers());
   });
 
   socket.on('makeGuess', (guess) => {
-    if (!gameState.isGameActive) return;
+    if (!gameState.targetNumber) return;
     
     const player = gameState.players.get(socket.id);
     if (!player) return;
@@ -248,15 +256,8 @@ io.on('connection', (socket) => {
       });
       
       setTimeout(() => {
-        resetGame();
-        io.emit('newRoundStarted', {
-          minRange: gameState.minRange,
-          maxRange: gameState.maxRange,
-          currentPlayerIndex: gameState.currentPlayerIndex,
-          currentPlayer: getCurrentPlayer(),
-          roundNumber: gameState.roundNumber,
-          players: getCurrentPlayers()
-        });
+        const roundData = startNewRound();
+        io.emit('newRoundStarted', roundData);
       }, 3000);
       
     } else {
@@ -268,7 +269,9 @@ io.on('connection', (socket) => {
         gameState.maxRange = guessNum - 1;
       }
       
-      gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % currentRoundPlayers.length;
+      if (hasUnguessedPlayers()) {
+        gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % currentRoundPlayers.length;
+      }
       
       io.emit('guessMade', {
         guess: guessRecord,
@@ -303,6 +306,17 @@ io.on('connection', (socket) => {
     });
   });
 });
+
+function getAllGuesses() {
+  let all = [];
+  gameHistory.forEach(round => {
+    if (round.guesses) {
+      all = all.concat(round.guesses);
+    }
+  });
+  all = all.concat(currentRoundRecords);
+  return all;
+}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
