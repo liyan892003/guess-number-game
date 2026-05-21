@@ -206,6 +206,14 @@ io.on('connection', (socket) => {
       });
     }
     
+    if (!hasUnguessedPlayers()) {
+      gameState.currentPlayerIndex = currentRoundPlayers.length - 1;
+      io.emit('currentPlayerUpdated', {
+        currentPlayerIndex: gameState.currentPlayerIndex,
+        currentPlayer: getCurrentPlayer()
+      });
+    }
+    
     io.emit('playerListUpdated', getCurrentPlayers());
   });
 
