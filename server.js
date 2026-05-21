@@ -15,6 +15,14 @@ const io = socketIo(server, {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.get('/admin/records', (req, res) => {
+  const records = {
+    usedStudentIds: Array.from(usedStudentIds),
+    totalParticipants: usedStudentIds.size
+  };
+  res.json(records);
+});
+
 const USED_STUDENTS_FILE = path.join(__dirname, 'used-students.json');
 
 function loadUsedStudents() {
