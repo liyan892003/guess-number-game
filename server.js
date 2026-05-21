@@ -131,8 +131,10 @@ function getCurrentPlayers() {
 
 function getCurrentPlayer() {
   if (currentRoundPlayers.length === 0) return null;
-  const index = gameState.currentPlayerIndex % currentRoundPlayers.length;
-  return currentRoundPlayers[index];
+  if (gameState.currentPlayerIndex >= currentRoundPlayers.length) {
+    return null;
+  }
+  return currentRoundPlayers[gameState.currentPlayerIndex];
 }
 
 function saveRoundRecord(winner) {
@@ -191,6 +193,10 @@ io.on('connection', (socket) => {
       });
       io.emit('newRoundStarted', roundData);
     } else {
+      if (!getCurrentPlayer()) {
+        gameState.currentPlayerIndex = currentRoundPlayers.length - 1;
+      }
+      
       socket.emit('joined', {
         playerId: socket.id,
         players: getCurrentPlayers(),
@@ -203,14 +209,6 @@ io.on('connection', (socket) => {
           players: getCurrentPlayers()
         },
         allGuesses: getAllGuesses()
-      });
-    }
-    
-    if (!hasUnguessedPlayers()) {
-      gameState.currentPlayerIndex = currentRoundPlayers.length - 1;
-      io.emit('currentPlayerUpdated', {
-        currentPlayerIndex: gameState.currentPlayerIndex,
-        currentPlayer: getCurrentPlayer()
       });
     }
     
@@ -277,8 +275,12 @@ io.on('connection', (socket) => {
         gameState.maxRange = guessNum - 1;
       }
       
-      if (hasUnguessedPlayers()) {
-        gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % currentRoundPlayers.length;
+      gameState.currentPlayerIndex = gameState.currentPlayerIndex + 1;
+      
+      while (gameState.currentPlayerIndex < currentRoundPlayers.length && 
+             currentRoundPlayers[gameState.currentPlayerIndex] && 
+             currentRoundPlayers[gameState.currentPlayerIndex].hasGuessed) {
+        gameState.currentPlayerIndex++;
       }
       
       io.emit('guessMade', {
