@@ -80,7 +80,7 @@ let gameState = {
   currentPlayerIndex: 0,
   players: new Map(),
   studentIds: new Set(),
-  roundNumber: 1
+  roundNumber: 0
 };
 
 function generateTargetNumber() {
@@ -98,7 +98,8 @@ function resetGame() {
   currentRoundPlayers = Array.from(gameState.players.values());
   currentRoundRecords = [];
   
-  gameState.players.forEach(player => {
+  currentRoundPlayers.forEach((player, index) => {
+    player.index = index;
     player.hasGuessed = false;
   });
 }
@@ -186,7 +187,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('startGame', () => {
-    if (!gameState.isGameActive && gameState.players.size > 0) {
+    if (gameState.players.size > 0) {
+      gameState.isGameActive = false;
       resetGame();
       io.emit('gameStarted', {
         minRange: gameState.minRange,
